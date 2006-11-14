@@ -1,0 +1,169 @@
+Lexical::Persistence(3)User Contributed Perl DocumentatioLnexical::Persistence(3)
+
+
+
+NNAAMMEE
+       Lexical::Persistence − Persistent lexical variable values for arbitrary
+       calls.
+
+SSYYNNOOPPSSIISS
+               #!/usr/bin/perl
+
+               use Lexical::Persistence;
+
+               my $persistence = Lexical::Persistence−>new();
+               foreach my $number (qw(one two three four five)) {
+                       $persistence−>call(\&target, number => $number);
+               }
+
+               exit;
+
+               sub target {
+                       my $arg_number;   # Parameter.
+                       my $narf_x++;     # Persistent.
+                       my $_i++;         # Dynamic.
+                       my $j++;          # Persistent.
+
+                       print "arg_number($arg_number) narf_x($narf_x) _i($_i) j($j)\n";
+               }
+
+DDEESSCCRRIIPPTTIIOONN
+       Lexical::Persistence objects encapsulate persistent data.  Lexical
+       variables in the functions they call are used to access this persistent
+       data.  The usual constructor, _n_e_w_(_), creates new persistence objects.
+
+       The persistence object’s _c_a_l_l_(_) method is used to call functions within
+       their persistent contexts.
+
+       By default, lexicals without a leading underscore are persistent while
+       ones with the underscore are not.  _p_a_r_s_e___v_a_r_i_a_b_l_e_(_) may be overridden
+       to change this behavior.
+
+       A single Lexical::Persistence object can encapsulate multiple persis‐
+       tent contexts.  Each context is configured with a _s_e_t___c_o_n_t_e_x_t_(_) call.
+
+       By default, _p_a_r_s_e___v_a_r_i_a_b_l_e_(_) determines the context to use by examining
+       the characters leading up to the first underscore in a variable’s name.
+
+       The _g_e_t___m_e_m_b_e_r___r_e_f_(_) returns a reference to the persistent value for a
+       given lexical variable.  The lexical will be aliased to the referenced
+       value returned by this method.
+
+       By default, _p_u_s_h___a_r_g___c_o_n_t_e_x_t_(_) translates named function parameters
+       into values within the "arg" context.  The parameters are then avail‐
+       able as $arg_name lexicals within _c_a_l_l_(_)’s target function.
+
+       _p_o_p___a_r_g___c_o_n_t_e_x_t_(_) is used to restore a previous argument context after
+       a target function returns.
+
+       A helper method, _w_r_a_p_(_), returns a coderef that, when called normally,
+       does _c_a_l_l_(_) magic internally.
+
+       By default, lexicals without prefixes persist in a catch‐all context
+       named "_".  The underscore is used because it’s _p_a_r_s_e___v_a_r_i_a_b_l_e_(_)’s con‐
+       text/member separator.  The _i_n_i_t_i_a_l_i_z_e___c_o_n_t_e_x_t_s_(_) member is called dur‐
+       ing _n_e_w_(_) to create initial contexts such as "_".
+
+       The _g_e_t___c_o_n_t_e_x_t_(_) accessor can be used to fetch a named context hash
+       for more detailed manipulation of its values.
+
+       nneeww
+
+       Create a new lexical persistence object.
+
+       iinniittiiaalliizzee__ccoonntteexxttss
+
+       Set whatever standard contexts belong to this class.  By default, a
+       catch‐all conext is set.
+
+       sseett__ccoonntteexxtt NNAAMMEE,, HHAASSHH
+
+       Store a context HASH within the persistence object, keyed on a NAME.
+       Contexts stored in the object will be shared among all the functions
+       called through this object.
+
+       _p_a_r_s_e___v_a_r_i_a_b_l_e_(_) will choose which lexicals are persistent and the
+       names of their contexts.
+
+       ggeett__ccoonntteexxtt NNAAMMEE
+
+       Returns a context hash associated with a particular context name.
+       Autovivifies the context if it doesn’t already exist.
+
+       ccaallll CCOODDEERREEFF,, PPAARRAAMMEETTEERR__LLIISSTT
+
+       Call CODEREF with lexical persistence.
+
+       The PARAMETER_LIST is passed to the callee in the usual Perl way.  It
+       may also be stored in an "argument context", as determined by
+       _p_u_s_h___a_r_g___c_o_n_t_e_x_t_(_).
+
+       Lexical variables within the callee will be restored from the current
+       context.  _p_a_r_s_e___v_a_r_i_a_b_l_e_(_) determines which variables are aliased and
+       which contexts they belong to.
+
+       wwrraapp CCOODDEERREEFF
+
+       Wrap a function or anonymous CODEREF such that it’s transparently
+       called via _c_a_l_l_(_).
+
+       ppaarrssee__vvaarriiaabbllee VVAARRIIAABBLLEE__NNAAMMEE
+
+       Determines whether a VARIABLE_NAME is persistent.  If it is, return the
+       variable’s sigil ("$", "@" or "%"), the context name where its persis‐
+       tent value lives, and the member within that context where the value is
+       stored.
+
+       On the other hand, it returns nothing if VARIABLE_NAME is not persis‐
+       tent.
+
+       ggeett__mmeemmbbeerr__rreeff SSIIGGIILL,, CCOONNTTEEXXTT__NNAAMMEE,, MMEEMMBBEERR__NNAAMMEE
+
+       Returns a reference to a persistent value.  The SIGIL defines the mem‐
+       ber’s type.  The CONTEXT_NAME and MEMBER_NAME describe where to find
+       the persistent value.
+
+       Scalar values are stored internally as scalars to be consistent with
+       how most people store scalars.
+
+       The persistent value is created if it doesn’t exist.  The initial value
+       is undef or empty, depending on its type.
+
+       ppuusshh__aarrgg__ccoonntteexxtt PPAARRAAMMEETTEERR__LLIISSTT
+
+       Convert a PARAMETER_LIST into members of an argument context.  By
+       default, the context is named "arg", so $arg_foo will contain the value
+       of the "foo" parameter.
+
+       ppoopp__aarrgg__ccoonntteexxtt OOLLDD__AARRGG__CCOONNTTEEXXTT
+
+       Restore the OLD_ARG_CONTEXT after a target function is called.  The
+       OLD_ARG_CONTEXT was returned by _p_u_s_h___a_r_g___c_o_n_t_e_x_t_(_).
+
+BBUUGGSS
+       Read them at http://rt.cpan.org/Public/Dist/Display.html?Name=lexi‐
+       cal−persistence
+
+       Report them at http://rt.cpan.org/Public/Bug/Report.html?Queue=lexi‐
+       cal−persistence
+
+SSEEEE AALLSSOO
+       POE::Stage, Devel::LexAlias, PadWalker, Catalyst::Controller::BindLex.
+
+LLIICCEENNSSEE
+       Lexical::Persistence in copyright 2006 by Rocco Caputo.  All rights
+       reserved.  Lexical::Persistence is free software.  It is released under
+       the same terms as Perl itself.
+
+AACCKKNNOOWWLLEEDDGGEEMMEENNTTSS
+       Thanks to Matt Trout and Yuval Kogman for lots of inspiration.  They
+       were the devil and the other devil sitting on my shoulders.
+
+       Nick Perez convinced me to make this a class rather than persist with
+       the original, functional design.
+
+       irc://irc.perl.org/poe for support and feedback.
+
+
+
+perl v5.8.6                       2006‐11‐14           Lexical::Persistence(3)

@@ -1,0 +1,8 @@
+CHANGES
+MANIFEST			This list of files
+META.yml
+Makefile.PL
+README
+eg/persistence.perl
+lib/Lexical/Persistence.pm
+t/01_basics.t
