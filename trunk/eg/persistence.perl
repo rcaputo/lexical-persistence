@@ -25,7 +25,7 @@ sub target {
 {
 	print "The call() way:\n";
 
-	my $persistence = Persistence->new();
+	my $persistence = Lexical::Persistence->new();
 
 	foreach my $number (qw(one two three four five)) {
 		$persistence->call(\&target, number => $number);
@@ -37,7 +37,7 @@ sub target {
 {
 	print "The wrap() way:\n";
 
-	my $persistence = Persistence->new();
+	my $persistence = Lexical::Persistence->new();
 	my $thunk = $persistence->wrap(\&target);
 
 	foreach my $number (qw(one two three four five)) {
@@ -51,7 +51,7 @@ sub target {
 
 {
 	package PoeLex;
-	our @ISA = qw(Persistence);
+	our @ISA = qw(Lexical::Persistence);
 
 	# TODO - Make these lazy so the work isn't done every call?
 
@@ -66,7 +66,7 @@ sub target {
 		# Modify the catch-all context so it contains other arguments.
 
 		my $catch_all = $self->get_context("_");
-		@$catch_all{qw(kernel heap session sender)} = @_[
+		@$catch_all{qw($kernel $heap $session $sender)} = @_[
 			KERNEL, HEAP, SESSION, SENDER
 		];
 
@@ -94,10 +94,8 @@ sub target {
 			inline_states => {
 				_start => sub {
 					$_[KERNEL]->yield(moo => 0);
-					$_[KERNEL]->yield(bar => 0);
 				},
 				moo => $persistence->wrap(\&handle_moo),
-				bar => $persistence->wrap(__PACKAGE__, "handle_bar"),
 			},
 		);
 	}
@@ -110,17 +108,8 @@ sub target {
 		my $heap_foo++;       # more magic
 		my ($kernel, $heap);  # also magic
 
-		print "  moo: $arg_0 ... heap = $heap_foo ... heap b = $heap->{foo}\n";
+		print "  moo: $arg_0 ... heap = $heap_foo ... heap b = $heap->{'$foo'}\n";
 		$kernel->yield(moo => $arg_0) if $arg_0 < 10;
-	}
-
-	sub handle_bar {
-		my $arg_0++;          # magic
-		my $heap_foo++;       # more magic
-		my ($kernel, $heap);  # also magic
-
-		print "  bar: $arg_0 ... heap = $heap_foo ... heap b = $heap->{foo}\n";
-		$kernel->yield(bar => $arg_0) if $arg_0 < 10;
 	}
 }
 
@@ -131,25 +120,25 @@ exit;
 __END__
 
 The call() way:
-	target arg_number(one) narf_x(1) _i(1) j(1)
-	target arg_number(two) narf_x(2) _i(1) j(2)
-	target arg_number(three) narf_x(3) _i(1) j(3)
-	target arg_number(four) narf_x(4) _i(1) j(4)
-	target arg_number(five) narf_x(5) _i(1) j(5)
+  target arg_number(one) narf_x(1) _i(1) j(1)
+  target arg_number(two) narf_x(2) _i(1) j(2)
+  target arg_number(three) narf_x(3) _i(1) j(3)
+  target arg_number(four) narf_x(4) _i(1) j(4)
+  target arg_number(five) narf_x(5) _i(1) j(5)
 The wrap() way:
-	target arg_number(one) narf_x(1) _i(1) j(1)
-	target arg_number(two) narf_x(2) _i(1) j(2)
-	target arg_number(three) narf_x(3) _i(1) j(3)
-	target arg_number(four) narf_x(4) _i(1) j(4)
-	target arg_number(five) narf_x(5) _i(1) j(5)
+  target arg_number(one) narf_x(1) _i(1) j(1)
+  target arg_number(two) narf_x(2) _i(1) j(2)
+  target arg_number(three) narf_x(3) _i(1) j(3)
+  target arg_number(four) narf_x(4) _i(1) j(4)
+  target arg_number(five) narf_x(5) _i(1) j(5)
 Using POE:
-	count = 1 ... heap = 1 ... heap b = 1
-	count = 2 ... heap = 2 ... heap b = 2
-	count = 3 ... heap = 3 ... heap b = 3
-	count = 4 ... heap = 4 ... heap b = 4
-	count = 5 ... heap = 5 ... heap b = 5
-	count = 6 ... heap = 6 ... heap b = 6
-	count = 7 ... heap = 7 ... heap b = 7
-	count = 8 ... heap = 8 ... heap b = 8
-	count = 9 ... heap = 9 ... heap b = 9
-	count = 10 ... heap = 10 ... heap b = 10
+  moo: 1 ... heap = 1 ... heap b = 1
+  moo: 2 ... heap = 2 ... heap b = 2
+  moo: 3 ... heap = 3 ... heap b = 3
+  moo: 4 ... heap = 4 ... heap b = 4
+  moo: 5 ... heap = 5 ... heap b = 5
+  moo: 6 ... heap = 6 ... heap b = 6
+  moo: 7 ... heap = 7 ... heap b = 7
+  moo: 8 ... heap = 8 ... heap b = 8
+  moo: 9 ... heap = 9 ... heap b = 9
+  moo: 10 ... heap = 10 ... heap b = 10
