@@ -18,57 +18,187 @@ Lexical::Persistence - Persistent lexical variable values for arbitrary calls.
 	exit;
 
 	sub target {
-		my $arg_number;   # Parameter.
+		my $arg_number;   # Argument.
 		my $narf_x++;     # Persistent.
 		my $_i++;         # Dynamic.
 		my $j++;          # Persistent.
 
-		print "arg_number($arg_number) narf_x($narf_x) _i($_i) j($j)\n";
+		print "arg_number = $arg_number\n";
+		print "\tnarf_x = $narf_x\n";
+		print "\t_i = $_i\n";
+		print "\tj = $j\n";
 	}
 
 =head1 DESCRIPTION
 
-Lexical::Persistence objects encapsulate persistent data.  Lexical
-variables in the functions they call are used to access this
-persistent data.  The usual constructor, new(), creates new
-persistence objects.
+Lexical::Persistence does a few things, all related.  Note that all
+the behaviors listed here are the defaults.  Subclasses can override
+nearly every aspect of Lexical::Persistence's behavior.
 
-The persistence object's call() method is used to call functions
-within their persistent contexts.
+Lexical::Persistence lets your code access persistent data through
+lexical variables.  This example prints "some value" because the value
+of $x perists in the $lp object between setter() and getter().
 
-By default, lexicals without a leading underscore are persistent while
-ones with the underscore are not.  parse_variable() may be overridden
-to change this behavior.
+	use Lexical::Persistence;
 
-A single Lexical::Persistence object can encapsulate multiple
-persistent contexts.  Each context is configured with a set_context()
-call.
+	my $lp = Lexical::Persistence->new();
+	$lp->call(\&setter);
+	$lp->call(\&getter);
 
-By default, parse_variable() determines the context to use by
-examining the characters leading up to the first underscore in a
-variable's name.
+	sub setter { my $x = "some value" }
+	sub getter { print my $x, "\n" }
 
-The get_member_ref() returns a reference to the persistent value for a
-given lexical variable.  The lexical will be aliased to the referenced
-value returned by this method.
+Lexicals with leading underscores are not persistent.
 
-By default, push_arg_context() translates named function parameters
-into values within the "arg" context.  The parameters are then
-available as $arg_name lexicals within call()'s target function.
+By default, Lexical::Persistence supports accessing data from multiple
+sources through the use of variable prefixes.  The set_context()
+member sets each data source.  It takes a prefix name and a hash of
+key/value pairs.  By default, the keys must have sigils representing
+their variable types.
 
-pop_arg_context() is used to restore a previous argument context after
-a target function returns.
+	use Lexical::Persistence;
 
-A helper method, wrap(), returns a coderef that, when called normally,
-does call() magic internally.
+	my $lp = Lexical::Persistence->new();
+	$lp->set_context( pi => { '$member' => 3.141 } );
+	$lp->set_context( e => { '@member' => [ 2, '.', 7, 1, 8 ] } );
+	$lp->set_context(
+		animal => {
+			'%member' => { cat => "meow", dog => "woof" }
+		}
+	);
 
-By default, lexicals without prefixes persist in a catch-all context
-named "_".  The underscore is used because it's parse_variable()'s
-context/member separator.  The initialize_contexts() member is called
-during new() to create initial contexts such as "_".
+	$lp->call(\&display);
 
-The get_context() accessor can be used to fetch a named context hash
-for more detailed manipulation of its values.
+	sub display {
+		my ($pi_member, @e_member, %animal_member);
+
+		print "pi = $pi_member\n";
+		print "e = @e_member\n";
+		while (my ($animal, $sound) = each %animal_member) {
+			print "The $animal goes... $sound!\n";
+		}
+	}
+
+And the corresponding output:
+
+	pi = 3.141
+	e = 2 . 7 1 8
+	The cat goes... meow!
+	The dog goes... woof!
+
+By default, call() takes a single subroutine reference and an optional
+list of named arguments.  The arguments will be passed directly to the
+called subroutine, but Lexical::Persistence also makes the values
+available from the "arg" prefix.
+
+	use Lexical::Persistence;
+
+	my %animals = (
+		snake => "hiss",
+		plane => "I'm Cartesian",
+	);
+
+	my $lp = Lexical::Persistence->new();
+	while (my ($animal, $sound) = each %animals) {
+		$lp->call(\&display, animal => $animal, sound => $sound);
+	}
+
+	sub display {
+		my ($arg_animal, $arg_sound);
+		print "The $arg_animal goes... $arg_sound!\n";
+	}
+
+And the corresponding output:
+
+	The plane goes... I'm Cartesian!
+	The snake goes... hiss!
+
+Sometimes you want to call functions normally.  The wrap() method will
+wrap your function in a small thunk that does the call() for you,
+returning a coderef.
+
+	use Lexical::Persistence;
+
+	my $lp = Lexical::Persistence->new();
+	my $thunk = $lp->wrap(\&display);
+
+	$thunk->(animal => "squirrel", sound => "nuts");
+
+	sub display {
+		my ($arg_animal, $arg_sound);
+		print "The $arg_animal goes... $arg_sound!\n";
+	}
+
+And the corresponding output:
+
+	The squirrel goes... nuts!
+
+Prefixes are the characters leading up to the first underscore in a
+lexical variable's name.  However, there's also a default context
+named underscore.  It's literally "_" because the underscore is not
+legal in a context name by default.  Variables without prefixes, or
+with prefixes that have not been previously defined by set_context(),
+are stored in that context.
+
+The get_context() member returns a hash for a named context.  This
+allows your code to manipulate the values within a persistent context.
+
+	use Lexical::Persistence;
+
+	my $lp = Lexical::Persistence->new();
+	$lp->set_context(
+		_ => {
+			'@mind' => [qw(My mind is going. I can feel it.)]
+		}
+	);
+
+	while (1) {
+		$lp->call(\&display);
+		my $mind = $lp->get_context("_")->{'@mind'};
+		splice @$mind, rand(@$mind), 1;
+		last unless @$mind;
+	}
+
+	sub display {
+		my @mind;
+		print "@mind\n";
+	}
+
+Displays something like:
+
+	My mind is going. I can feel it.
+	My is going. I can feel it.
+	My is going. I feel it.
+	My going. I feel it.
+	My going. I feel
+	My I feel
+	My I
+	My
+
+It's possible to create multiple Lexical::Persistence objects, each
+with a unique state.
+
+	use Lexical::Persistence;
+
+	my $lp_1 = Lexical::Persistence->new();
+	$lp_1->set_context( _ => { '$foo' => "context 1's foo" } );
+
+	my $lp_2 = Lexical::Persistence->new();
+	$lp_2->set_context( _ => { '$foo' => "the foo in context 2" } );
+
+	$lp_1->call(\&display);
+	$lp_2->call(\&display);
+
+	sub display {
+		print my $foo, "\n";
+	}
+
+Gets you this output:
+
+	context 1's foo
+	the foo in context 2
+
+If you come up with other fun uses, let us know.
 
 =cut
 
@@ -77,14 +207,16 @@ package Lexical::Persistence;
 use warnings;
 use strict;
 
-our $VERSION = '0.95';
+our $VERSION = '0.96';
 
 use Devel::LexAlias qw(lexalias);
 use PadWalker qw(peek_sub);
 
 =head2 new
 
-Create a new lexical persistence object.
+Create a new lexical persistence object.  This object will store one
+or more persistent contexts.  When called by this object, lexical
+variables will take on the values kept in this object.
 
 =cut
 
@@ -102,8 +234,11 @@ sub new {
 
 =head2 initialize_contexts
 
-Set whatever standard contexts belong to this class.  By default, a
-catch-all conext is set.
+This method is called by new() to declare the initial contexts for a
+new Lexical::Persistence object.  The default implementation declares
+the default "_" context.
+
+Override or extend it to create others as needed.
 
 =cut
 
@@ -115,11 +250,22 @@ sub initialize_contexts {
 =head2 set_context NAME, HASH
 
 Store a context HASH within the persistence object, keyed on a NAME.
-Contexts stored in the object will be shared among all the functions
-called through this object.
+Members of the context HASH are unprefixed versions of the lexicals
+they'll persist, including the sigil.  For example, this set_context()
+call declares a "request" context with predefined values for three
+variables: $request_foo, @request_foo, and %request_foo:
 
-parse_variable() will choose which lexicals are persistent and the
-names of their contexts.
+	$lp->set_context(
+		request => {
+			'$foo' => 'value of $request_foo',
+			'@foo' => [qw( value of @request_foo )],
+			'%foo' => { key => 'value of $request_foo{key}' }
+		}
+	);
+
+See parse_variable() for information about how Lexical::Persistence
+decides which context a lexical belongs to and how you can change
+that.
 
 =cut
 
@@ -131,7 +277,8 @@ sub set_context {
 =head2 get_context NAME
 
 Returns a context hash associated with a particular context name.
-Autovivifies the context if it doesn't already exist.
+Autovivifies the context if it doesn't already exist, so be careful
+there.
 
 =cut
 
@@ -140,17 +287,20 @@ sub get_context {
 	$self->{context}{$context_name} ||= { };
 }
 
-=head2 call CODEREF, PARAMETER_LIST
+=head2 call CODEREF, ARGUMENT_LIST
 
-Call CODEREF with lexical persistence.
+Call CODEREF with lexical persistence and an optional ARGUMENT_LIST,
+consisting of name => value pairs.  Unlike with set_context(),
+however, argument names do not need sigils.  This may change in the
+future, however, as it's easy to access an argument with the wrong
+variable type.
 
-The PARAMETER_LIST is passed to the callee in the usual Perl way.  It
-may also be stored in an "argument context", as determined by
-push_arg_context().
+The ARGUMENT_LIST is passed to the called CODEREF through @_ in the
+usual way.  They're also available as $arg_name variables for
+convenience.
 
-Lexical variables within the callee will be restored from the current
-context.  parse_variable() determines which variables are aliased and
-which contexts they belong to.
+See push_arg_context() for information about how $arg_name works, and
+what you can do to change that behavior.
 
 =cut
 
@@ -186,8 +336,12 @@ sub call {
 
 =head2 wrap CODEREF
 
-Wrap a function or anonymous CODEREF such that it's transparently
-called via call().
+Wrap a function or anonymous CODEREF so that it's transparently called
+via call().  Returns a coderef which can be called directly.  Named
+arguments to the call will automatically become available as $arg_name
+lexicals within the called CODEREF.
+
+See call() and push_arg_context() for more details.
 
 =cut
 
@@ -212,13 +366,20 @@ sub wrap {
 
 =head2 parse_variable VARIABLE_NAME
 
-Determines whether a VARIABLE_NAME is persistent.  If it is, return
-the variable's sigil ("$", "@" or "%"), the context name where its
-persistent value lives, and the member within that context where the
-value is stored.
+This method determines whether VARIABLE_NAME should be persistent.  If
+it should, parse_variable() will return three values: the variable's
+sigil ('$', '@' or '%'), the context name in which the variable
+persists (see set_context()), and the name of the member within that
+context where the value is stored.  parse_variable() returns nothing
+if VARIABLE_NAME should not be persistent.
 
-On the other hand, it returns nothing if VARIABLE_NAME is not
-persistent.
+parse_variable() also determines whether the member name includes its
+sigil.  By default, the "arg" context is the only one with members
+that have no sigils.  This is done to support the unadorned argument
+names used by call().
+
+This method implements a default behavior.  It's intended to be
+overridden or extended by subclasses.
 
 =cut
 
@@ -233,19 +394,20 @@ sub parse_variable {
 
 	if (defined $context) {
 		if (exists $self->{context}{$context}) {
-			return $sigil, $context, $member;
+			return $sigil, $context, $member if $context eq "arg";
+			return $sigil, $context, "$sigil$member";
 		}
-		return $sigil, "_", $context . "_" . $member;
+		return $sigil, "_", "$sigil$context\_$member";
 	}
 
-	return $sigil, "_", $member;
+	return $sigil, "_", "$sigil$member";
 }
 
-=head2 get_member_ref SIGIL, CONTEXT_NAME, MEMBER_NAME
+=head2 get_member_ref SIGIL, CONTEXT, MEMBER
 
-Returns a reference to a persistent value.  The SIGIL defines the
-member's type.  The CONTEXT_NAME and MEMBER_NAME describe where to
-find the persistent value.
+This method fetches a reference to the named MEMBER of a particular
+named CONTEXT.  The returned value type will be governed by the given
+SIGIL.
 
 Scalar values are stored internally as scalars to be consistent with
 how most people store scalars.
@@ -253,14 +415,15 @@ how most people store scalars.
 The persistent value is created if it doesn't exist.  The initial
 value is undef or empty, depending on its type.
 
+This method implements a default behavior.  It's intended to be
+overridden or extended by subclasses.
+
 =cut
 
 sub get_member_ref {
 	my ($self, $sigil, $context, $member) = @_;
 
 	my $hash = $self->{context}{$context};
-
-	$member = $sigil . $member unless $context eq "arg";
 
 	if ($sigil eq '$') {
 		$hash->{$member} = undef unless exists $hash->{$member};
@@ -277,11 +440,18 @@ sub get_member_ref {
 	return $hash->{$member};
 }
 
-=head2 push_arg_context PARAMETER_LIST
+=head2 push_arg_context ARGUMENT_LIST
 
-Convert a PARAMETER_LIST into members of an argument context.  By
-default, the context is named "arg", so $arg_foo will contain the
-value of the "foo" parameter.
+Convert a named ARGUMENT_LIST into members of an argument context, and
+call set_context() to declare that context.  This is how $arg_foo
+variables are supported.  This method returns the previous context,
+fetched by get_context() before the new context is set.
+
+This method implements a default behavior.  It's intended to be
+overridden or extended by subclasses.  For example, to redefine the
+parameters as $param_foo.
+
+See pop_arg_context() for the other side of this coin.
 
 =cut
 
@@ -294,8 +464,12 @@ sub push_arg_context {
 
 =head2 pop_arg_context OLD_ARG_CONTEXT
 
-Restore the OLD_ARG_CONTEXT after a target function is called.  The
-OLD_ARG_CONTEXT was returned by push_arg_context().
+Restores OLD_ARG_CONTEXT after a target function has returned.  The
+OLD_ARG_CONTEXT is the return value from the push_arg_context() call
+just prior to the target function's call.
+
+This method implements a default behavior.  It's intended to be
+overridden or extended by subclasses.
 
 =cut
 
@@ -326,10 +500,14 @@ under the same terms as Perl itself.
 =head1 ACKNOWLEDGEMENTS
 
 Thanks to Matt Trout and Yuval Kogman for lots of inspiration.  They
-were the devil and the other devil sitting on my shoulders.
+were the demon and the other demon sitting on my shoulders.
 
 Nick Perez convinced me to make this a class rather than persist with
-the original, functional design.
+the original, functional design.  While Higher Order Perl is fun for
+development, I have to say the move to OO was a good one.
+
+The South Florida Perl Mongers, especially Jeff Bisbee and Marlon
+Bailey, for documentation feedback.
 
 irc://irc.perl.org/poe for support and feedback.
 
