@@ -334,6 +334,24 @@ sub call {
 	return $return;
 }
 
+=head2 invoke OBJECT, METHOD, ARGUMENT_LIST
+
+Invoke OBJECT->METHOD(ARGUMENT_LIST) while maintaining state for the
+METHOD's lexical variables.  Written in terms of call(), except that
+it takes OBJECT and METHOD rather than CODEREF.  See call() for more
+details.
+
+May have issues with methods invoked via AUTOLOAD, as invoke() uses
+can() to find the method's CODEREF for call().
+
+=cut
+
+sub invoke {
+	my ($self, $object, $method, @args) = @_;
+	return unless defined( my $sub = $object->can($method) );
+	$self->call($sub, @args);
+}
+
 =head2 wrap CODEREF
 
 Wrap a function or anonymous CODEREF so that it's transparently called
@@ -358,9 +376,8 @@ sub wrap {
 	# TODO - Make it resolve the method at call time.
 	# TODO - Possibly make it generate dynamic facade classes.
 
-	my $code = $invocant->can($method);
 	return sub {
-		$self->call($code, @_);
+		$self->invoke($invocant, $method, @_);
 	};
 }
 
