@@ -198,6 +198,21 @@ Gets you this output:
 	context 1's foo
 	the foo in context 2
 
+You can also compile and execute perl code contained in plain strings in a
+a lexical environment that already contains the persisted variables.
+
+	use Lexical::Persistence;
+
+	my $lp = Lexical::Persistence->new();
+
+	$lp->eval( 'my $message = "Hello, world" );
+
+	$lp->eval( 'print "$message\n"' );
+
+Which gives the output:
+
+	Hello, world
+
 If you come up with other fun uses, let us know.
 
 =cut
@@ -381,6 +396,68 @@ sub wrap {
 	};
 }
 
+=head2 compile CODE
+
+Compile CODE string in a lexical context that declares all the
+variables stored in the default context.  This avoids having to
+declare variables explicitly in the code using 'my'.  Returns a CODE
+reference suitable to pass to call().  If the code fails to compile,
+undef is returned.  The caller can find the exception in $@.
+
+eval() is a convenient way to compile() and call() a piece of code.
+
+=cut
+
+sub compile {
+	my ($self, $code) = @_;
+
+	# Don't worry about values because $self->call() will deal with them
+	my $vars = join(
+		" ", map { "my $_;" }
+		keys %{ $self->get_context('_') }
+	);
+
+	# Declare the variables OUTSIDE the actual sub. The compiler will
+	# pull any into the sub that are actually used. Any that aren't will
+	# just get dropped at this point
+	eval "$vars sub { $code }";
+}
+
+=head2 eval CODE
+
+Compile and execute the CODE string in the lexical context and persist
+the variables it uses.
+
+This example prints the numbers 1 through 10.  Note, however, that
+eval() compiles the same code each time.
+
+	use Lexical::Persistence;
+
+	my $lp = Lexical::Persistence->new();
+	for (1..10) {
+		$lp->eval('my $count++; print "$count\\n"');
+	}
+
+The previous example may be rewritten in terms of compile() and call()
+to avoid recompiling code every iteration:
+
+	use Lexical::Persistence;
+
+	my $lp = Lexical::Persistence->new();
+	my $coderef = $lp->compile('my $count++; print "$count\\n"');
+	for (1..10) {
+		$lp->call($coderef);
+	}
+
+=cut
+
+sub eval {
+	my ($self, $code) = @_;
+
+	my $sub = $self->compile( $code ) or die $@;
+	$self->call( $sub );
+}
+
 =head2 parse_variable VARIABLE_NAME
 
 This method determines whether VARIABLE_NAME should be persistent.  If
@@ -522,6 +599,8 @@ were the demon and the other demon sitting on my shoulders.
 Nick Perez convinced me to make this a class rather than persist with
 the original, functional design.  While Higher Order Perl is fun for
 development, I have to say the move to OO was a good one.
+
+Paul "LeoNerd" Evans contributed the compile() and eval() methods.
 
 The South Florida Perl Mongers, especially Jeff Bisbee and Marlon
 Bailey, for documentation feedback.

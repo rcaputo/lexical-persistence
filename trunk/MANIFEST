@@ -9,3 +9,4 @@ README
 t/01_basics.t
 t/02_pod.t
 t/03_pod_coverage.t
+t/04_eval.t
