@@ -396,19 +396,24 @@ sub wrap {
 	};
 }
 
-=head2 compile CODE
+=head2 prepare CODE
 
-Compile CODE string in a lexical context that declares all the
-variables stored in the default context.  This avoids having to
-declare variables explicitly in the code using 'my'.  Returns a CODE
-reference suitable to pass to call().  If the code fails to compile,
-undef is returned.  The caller can find the exception in $@.
+Wrap a CODE string in a subroutine definition, and prepend
+declarations for all the variables stored in the Lexical::Persistence
+default context.  This avoids having to declare variables explicitly
+in the code using 'my'.  Returns a new code string ready for Perl's
+built-in eval().  From there, a program may $lp->call() the code or
+$lp->wrap() it.
 
-eval() is a convenient way to compile() and call() a piece of code.
+Also see L</compile()>, which is a convenient wrapper for prepare()
+and Perl's built-in eval().
+
+Also see L</do()>, which is a convenient way to prepare(), eval() and
+call() in one step.
 
 =cut
 
-sub compile {
+sub prepare {
 	my ($self, $code) = @_;
 
 	# Don't worry about values because $self->call() will deal with them
@@ -420,22 +425,36 @@ sub compile {
 	# Declare the variables OUTSIDE the actual sub. The compiler will
 	# pull any into the sub that are actually used. Any that aren't will
 	# just get dropped at this point
-	eval "$vars sub { $code }";
+	return "$vars sub { $code }";
 }
 
-=head2 eval CODE
+=head2 compile CODE
 
-Compile and execute the CODE string in the lexical context and persist
-the variables it uses.
+compile() is a convenience method to prepare() a CODE string, eval()
+it, and then return the resulting coderef.  If it fails, it returns
+false, and $@ will explain why.
+
+=cut
+
+sub compile {
+	my ($self, $code) = @_;
+	return eval($self->prepare($code));
+}
+
+=head2 do CODE
+
+do() is a convenience method to compile() a CODE string and execute
+it.  It returns the result of CODE's execution, or it throws an
+exception on failure.
 
 This example prints the numbers 1 through 10.  Note, however, that
-eval() compiles the same code each time.
+do() compiles the same code each time.
 
 	use Lexical::Persistence;
 
 	my $lp = Lexical::Persistence->new();
 	for (1..10) {
-		$lp->eval('my $count++; print "$count\\n"');
+		$lp->do('my $count++; print "$count\\n"');
 	}
 
 The previous example may be rewritten in terms of compile() and call()
@@ -449,9 +468,14 @@ to avoid recompiling code every iteration:
 		$lp->call($coderef);
 	}
 
+do() inherits some limitations from PadWalker's peek_sub().  For
+instance, it cannot alias lexicals within sub() definitions in the
+supplied CODE string.  However, Lexical::Persistence can do this with
+careful use of eval() and some custom CODE preparation.
+
 =cut
 
-sub eval {
+sub do {
 	my ($self, $code) = @_;
 
 	my $sub = $self->compile( $code ) or die $@;
