@@ -205,9 +205,9 @@ a lexical environment that already contains the persisted variables.
 
 	my $lp = Lexical::Persistence->new();
 
-	$lp->eval( 'my $message = "Hello, world" );
+	$lp->do( 'my $message = "Hello, world" );
 
-	$lp->eval( 'print "$message\n"' );
+	$lp->do( 'print "$message\n"' );
 
 Which gives the output:
 
@@ -453,20 +453,23 @@ do() compiles the same code each time.
 	use Lexical::Persistence;
 
 	my $lp = Lexical::Persistence->new();
-	for (1..10) {
-		$lp->do('my $count++; print "$count\\n"');
-	}
+	$lp->do('my $count = 0');
+	$lp->do('print ++$count, "\\n"') for 1..10;
+
+Lexical declarations are preserved across do() invocations, such as
+with $count in the surrounding examples.  This behavior is part of
+prepare(), which do() uses via compile().
 
 The previous example may be rewritten in terms of compile() and call()
-to avoid recompiling code every iteration:
+to avoid recompiling code every iteration.  Lexical declarations are
+preserved between do() and compile() as well:
 
 	use Lexical::Persistence;
 
 	my $lp = Lexical::Persistence->new();
-	my $coderef = $lp->compile('my $count++; print "$count\\n"');
-	for (1..10) {
-		$lp->call($coderef);
-	}
+	$lp->do('my $count = 0');
+	my $coderef = $lp->compile('print ++$count, "\\n"');
+	$lp->call($coderef) for 1..10;
 
 do() inherits some limitations from PadWalker's peek_sub().  For
 instance, it cannot alias lexicals within sub() definitions in the
