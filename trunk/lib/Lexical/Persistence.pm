@@ -222,7 +222,7 @@ package Lexical::Persistence;
 use warnings;
 use strict;
 
-our $VERSION = '0.97';
+our $VERSION = '0.98';
 
 use Devel::LexAlias qw(lexalias);
 use PadWalker qw(peek_sub);
