@@ -27,7 +27,7 @@ WriteMakefile(
     PREOP    => (
       '../repo-tools/svn-log.perl | ' .
       '/usr/bin/tee ./$(DISTNAME)-$(VERSION)/CHANGES > ./CHANGES; ' .
-			'perldoc lib/Lexical/Persistence.pm | ' .
+			'LANG=C perldoc lib/Lexical/Persistence.pm | ' .
 			'/usr/bin/tee ./$(DISTNAME)-$(VERSION)/README > ./README'
     ),
   },
