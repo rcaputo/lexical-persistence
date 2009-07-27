@@ -222,7 +222,7 @@ package Lexical::Persistence;
 use warnings;
 use strict;
 
-our $VERSION = '0.98';
+our $VERSION = '1.01';
 
 use Devel::LexAlias qw(lexalias);
 use PadWalker qw(peek_sub);
@@ -599,22 +599,22 @@ sub pop_arg_context {
 	$self->set_context( arg => $old_context );
 }
 
-=head1 BUG TRACKER
-
-https://rt.cpan.org/Dist/Display.html?Status=Active&Queue=Lexical-Persistence
-
-=head1 REPOSITORY
-
-http://thirdlobe.com/svn/lex-per/
-
-=head1 OTHER RESOURCES
-
-http://search.cpan.org/dist/Lexical-Persistence/
-
 =head1 SEE ALSO
 
 L<POE::Stage>, L<Devel::LexAlias>, L<PadWalker>,
 L<Catalyst::Controller::BindLex>.
+
+=head2 BUG TRACKER
+
+https://rt.cpan.org/Dist/Display.html?Status=Active&Queue=Lexical-Persistence
+
+=head2 REPOSITORY
+
+http://thirdlobe.com/svn/lex-per/
+
+=head2 OTHER RESOURCES
+
+http://search.cpan.org/dist/Lexical-Persistence/
 
 =head1 COPYRIGHT
 
