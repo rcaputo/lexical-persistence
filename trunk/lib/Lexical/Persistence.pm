@@ -599,13 +599,17 @@ sub pop_arg_context {
 	$self->set_context( arg => $old_context );
 }
 
-=head1 BUGS
+=head1 BUG TRACKER
 
-Read them at
-http://rt.cpan.org/Public/Dist/Display.html?Name=lexical-persistence
+https://rt.cpan.org/Dist/Display.html?Status=Active&Queue=Lexical-Persistence
 
-Report them at
-http://rt.cpan.org/Public/Bug/Report.html?Queue=lexical-persistence
+=head1 REPOSITORY
+
+http://thirdlobe.com/svn/lex-per/
+
+=head1 OTHER RESOURCES
+
+http://search.cpan.org/dist/Lexical-Persistence/
 
 =head1 SEE ALSO
 
@@ -614,9 +618,9 @@ L<Catalyst::Controller::BindLex>.
 
 =head1 COPYRIGHT
 
-Lexical::Persistence in copyright 2006 by Rocco Caputo.  All rights
-reserved.  Lexical::Persistence is free software.  It is released
-under the same terms as Perl itself.
+Lexical::Persistence in copyright 2006-2009 by Rocco Caputo.  All
+rights reserved.  Lexical::Persistence is free software.  It is
+released under the same terms as Perl itself.
 
 =head1 ACKNOWLEDGEMENTS
 
