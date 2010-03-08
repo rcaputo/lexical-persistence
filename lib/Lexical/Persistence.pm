@@ -1,5 +1,3 @@
-# $Id$
-
 =head1 NAME
 
 Lexical::Persistence - Persistent lexical variable values for arbitrary calls.
@@ -222,7 +220,7 @@ package Lexical::Persistence;
 use warnings;
 use strict;
 
-our $VERSION = '1.01';
+our $VERSION = '1.020';
 
 use Devel::LexAlias qw(lexalias);
 use PadWalker qw(peek_sub);
@@ -610,7 +608,8 @@ https://rt.cpan.org/Dist/Display.html?Status=Active&Queue=Lexical-Persistence
 
 =head2 REPOSITORY
 
-http://thirdlobe.com/svn/lex-per/
+http://github.com/rcaputo/lexical-persistence
+http://gitorious.org/lexical-persistence
 
 =head2 OTHER RESOURCES
 
@@ -618,7 +617,7 @@ http://search.cpan.org/dist/Lexical-Persistence/
 
 =head1 COPYRIGHT
 
-Lexical::Persistence in copyright 2006-2009 by Rocco Caputo.  All
+Lexical::Persistence in copyright 2006-2010 by Rocco Caputo.  All
 rights reserved.  Lexical::Persistence is free software.  It is
 released under the same terms as Perl itself.
 

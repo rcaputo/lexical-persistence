@@ -1,5 +1,3 @@
-# $Id$
-
 use warnings;
 use strict;
 
@@ -24,14 +22,14 @@ WriteMakefile(
 	META_ADD     => {
 		resources  => {
 			license    => 'http://dev.perl.org/licenses/',
-			repository => 'http://thirdlobe.com/svn/lex-per/trunk'
+			repository => 'http://github.com/rcaputo/lexical-persistence'
 		},
 	},
 	dist           => {
 		COMPRESS => 'gzip -9f',
 		SUFFIX   => 'gz',
 		PREOP    => (
-			'../repo-tools/svn-log.perl | ' .
+			'git-log.pl | ' .
 			'/usr/bin/tee ./$(DISTNAME)-$(VERSION)/CHANGES > ./CHANGES; ' .
 			'LANG=C perldoc lib/Lexical/Persistence.pm | ' .
 			'/usr/bin/tee ./$(DISTNAME)-$(VERSION)/README > ./README'

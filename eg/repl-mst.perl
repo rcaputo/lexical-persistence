@@ -1,5 +1,4 @@
 #!/usr/bin/env perl
-# $Id$
 
 # A brief REPL (read/eval/print loop) by Matt S. Trout.
 

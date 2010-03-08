@@ -1,5 +1,4 @@
 #!/usr/bin/env perl
-# $Id: persistence.perl 133 2006-11-13 08:25:49Z rcaputo $
 
 # An OO form of genlex.perl.  See Persistence.pm for the magic, or
 # __END__ for sample output.

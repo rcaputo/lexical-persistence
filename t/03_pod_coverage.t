@@ -1,4 +1,3 @@
-# $Id: 02_pod_coverage.t 2139 2006-10-01 17:07:59Z rcaputo $
 # vim: filetype=perl
 
 use Test::More;
