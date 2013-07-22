@@ -35,7 +35,7 @@ nearly every aspect of Lexical::Persistence's behavior.
 
 Lexical::Persistence lets your code access persistent data through
 lexical variables.  This example prints "some value" because the value
-of $x perists in the $lp object between setter() and getter().
+of $x persists in the $lp object between setter() and getter().
 
 	use Lexical::Persistence;
 
