@@ -617,7 +617,7 @@ http://search.cpan.org/dist/Lexical-Persistence/
 
 =head1 COPYRIGHT
 
-Lexical::Persistence in copyright 2006-2010 by Rocco Caputo.  All
+Lexical::Persistence in copyright 2006-2013 by Rocco Caputo.  All
 rights reserved.  Lexical::Persistence is free software.  It is
 released under the same terms as Perl itself.
 
