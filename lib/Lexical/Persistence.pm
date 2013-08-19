@@ -220,8 +220,6 @@ package Lexical::Persistence;
 use warnings;
 use strict;
 
-our $VERSION = '1.020';
-
 use Devel::LexAlias qw(lexalias);
 use PadWalker qw(peek_sub);
 
